@@ -318,10 +318,12 @@ local function finish_rename(note, new_name, meta)
   log.info("renamed " .. meta.count .. " reference(s) across " .. vim.tbl_count(meta.path_lookup) .. " file(s)")
 end
 
+---Merge the text edits of `heading_edit` into `edit`, keeping text edits before any
+---`kind = "rename"` change.
 ---@param edit lsp.WorkspaceEdit|nil
 ---@param heading_edit lsp.WorkspaceEdit|nil
 ---@return lsp.WorkspaceEdit|nil
-local function merge_edits(edit, heading_edit)
+M.merge_edits = function(edit, heading_edit)
   if not heading_edit then
     return edit
   end
@@ -363,20 +365,21 @@ end
 --- With `note.sync_heading`, the first heading of the note follows the new name when it
 --- equals the old id. Its edit is merged into `edit`, so the heading, the links naming it
 --- and the file rename are applied together.
+---@param opts obsidian.note.RenameOpts
 ---@param note obsidian.Note
 ---@param old_path string
 ---@param new_name string
 ---@param edit lsp.WorkspaceEdit|nil
 ---@param callback fun(edit: lsp.WorkspaceEdit|nil)
-local function with_heading_edit(note, old_path, new_name, edit, callback)
-  if not Obsidian.opts.note.sync_heading then
+local function with_heading_edit(opts, note, old_path, new_name, edit, callback)
+  if not Obsidian.opts.note.sync_heading or opts.sync_heading == false then
     return callback(edit)
   end
 
   local bufnr = vim.fn.bufnr(old_path, true)
   vim.fn.bufload(bufnr)
   require("obsidian.lsp.handlers._rename").build_first_heading_edit(bufnr, note.id, new_name, function(heading_edit)
-    callback(merge_edits(edit, heading_edit))
+    callback(M.merge_edits(edit, heading_edit))
   end)
 end
 
@@ -422,7 +425,7 @@ M.rename = function(note, new_name, opts, callback)
   end
 
   M.build_edit(note, new_name, opts, function(edit, meta)
-    with_heading_edit(note, old_path, new_name, edit, function(full_edit)
+    with_heading_edit(opts, note, old_path, new_name, edit, function(full_edit)
       edit = full_edit
       if opts.apply ~= false and edit then
         vim.lsp.util.apply_workspace_edit(edit, opts.offset_encoding or "utf-8")

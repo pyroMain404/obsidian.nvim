@@ -432,7 +432,8 @@ end
 ---@param target obsidian.lsp.RenameTarget
 ---@param new_name string
 ---@param callback fun(edit: lsp.WorkspaceEdit|?)
-M.build_heading_edit = function(target, new_name, callback)
+---@param opts? { sync_filename: boolean|? }
+M.build_heading_edit = function(target, new_name, callback, opts)
   local new_text = vim.trim(new_name)
   if new_text == "" or new_text:find("\n", 1, true) or vim.startswith(new_text, "#") then
     log.err(('Invalid heading "%s"'):format(new_text))
@@ -491,7 +492,42 @@ M.build_heading_edit = function(target, new_name, callback)
         end
       end
     end
-    callback(to_workspace_edit(file_edits))
+    local edit = to_workspace_edit(file_edits)
+
+    -- The first heading equal to the file stem drags the file along; the rename goes
+    -- through `Note:rename`, so backlinks, `id` and `title` follow it.
+    local sync = (opts and opts.sync_filename) ~= false and Obsidian.opts.note.sync_filename
+    local note = sync and api.current_note(target.bufnr)
+    local first = sync and M.headings(target.bufnr)[1]
+    if not (note and note.path and first and first.row == definition.row and definition.text == note.path.stem) then
+      return callback(edit)
+    end
+    note:rename(new_text, { apply = false, sync_heading = false }, function(err, file_edit)
+      if err then
+        log.err(('Heading "%s" not renamed: %s'):format(definition.text, err))
+        return callback(nil)
+      end
+      -- nvim only moves a modified buffer along with its file when the rename comes
+      -- first, so the edits of the note itself go after it, addressed to the new uri.
+      local own = vim.uri_from_bufnr(target.bufnr)
+      local rename = vim.iter(file_edit.documentChanges):find(function(change)
+        return change.kind == "rename" and change.oldUri == own
+      end)
+      local rest, mine = {}, nil
+      for _, change in ipairs(edit.documentChanges) do
+        if change.textDocument.uri == own then
+          mine = change
+        else
+          rest[#rest + 1] = change
+        end
+      end
+      local merged = require("obsidian.note.rename").merge_edits(file_edit, { documentChanges = rest })
+      if mine and rename then
+        mine.textDocument.uri = rename.newUri
+        table.insert(merged.documentChanges, mine)
+      end
+      callback(merged)
+    end)
   end)
 end
 
@@ -513,7 +549,7 @@ M.build_first_heading_edit = function(bufnr, old_id, new_name, callback)
     anchor = first.anchor,
     placeholder = first.text,
     range = range(first.row, first.start_col, first.end_col),
-  }, new_name, callback)
+  }, new_name, callback, { sync_filename = false })
 end
 
 --- Rewrite a footnote name in its definition and every reference. Footnotes are
