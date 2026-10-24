@@ -495,6 +495,27 @@ M.build_heading_edit = function(target, new_name, callback)
   end)
 end
 
+--- Rename the first heading of the buffer, and every link naming it, but only when it
+--- equals `old_id`. Used to keep the heading of a note in step with its renamed file.
+---@param bufnr integer
+---@param old_id string
+---@param new_name string
+---@param callback fun(edit: lsp.WorkspaceEdit|?)
+M.build_first_heading_edit = function(bufnr, old_id, new_name, callback)
+  local first = M.headings(bufnr)[1]
+  if not first or first.text ~= old_id then
+    return callback(nil)
+  end
+  M.build_heading_edit({
+    kind = "heading",
+    bufnr = bufnr,
+    header = first.text,
+    anchor = first.anchor,
+    placeholder = first.text,
+    range = range(first.row, first.start_col, first.end_col),
+  }, new_name, callback)
+end
+
 --- Rewrite a footnote name in its definition and every reference. Footnotes are
 --- scoped to their note, so only the buffer is touched.
 ---@param target obsidian.lsp.RenameTarget
