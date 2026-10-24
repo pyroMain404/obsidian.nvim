@@ -507,14 +507,17 @@ M.build_heading_edit = function(target, new_name, callback, opts)
         log.err(('Heading "%s" not renamed: %s'):format(definition.text, err))
         return callback(nil)
       end
+      if not file_edit then
+        return callback(edit)
+      end
       -- nvim only moves a modified buffer along with its file when the rename comes
       -- first, so the edits of the note itself go after it, addressed to the new uri.
       local own = vim.uri_from_bufnr(target.bufnr)
-      local rename = vim.iter(file_edit.documentChanges):find(function(change)
+      local rename = vim.tbl_filter(function(change)
         return change.kind == "rename" and change.oldUri == own
-      end)
+      end, file_edit.documentChanges or {})[1]
       local rest, mine = {}, nil
-      for _, change in ipairs(edit.documentChanges) do
+      for _, change in ipairs(edit and edit.documentChanges or {}) do
         if change.textDocument.uri == own then
           mine = change
         else
@@ -522,9 +525,9 @@ M.build_heading_edit = function(target, new_name, callback, opts)
         end
       end
       local merged = require("obsidian.note.rename").merge_edits(file_edit, { documentChanges = rest })
-      if mine and rename then
+      if merged and mine and rename then
         mine.textDocument.uri = rename.newUri
-        table.insert(merged.documentChanges, mine)
+        table.insert(merged.documentChanges or {}, mine)
       end
       callback(merged)
     end)

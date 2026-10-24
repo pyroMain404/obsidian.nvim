@@ -332,7 +332,11 @@ M.merge_edits = function(edit, heading_edit)
   end
 
   local changes = edit.documentChanges
-  for _, change in ipairs(heading_edit.documentChanges) do
+  if not changes then
+    changes = {}
+    edit.documentChanges = changes
+  end
+  for _, change in ipairs(heading_edit.documentChanges or {}) do
     local same
     for _, existing in ipairs(changes) do
       if existing.textDocument and existing.textDocument.uri == change.textDocument.uri then
