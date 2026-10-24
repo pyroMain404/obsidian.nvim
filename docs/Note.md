@@ -100,6 +100,18 @@ Scripts can call `note:delete()` directly and inspect the returned deletion resu
 
 Support for deleting notes through LSP-aware file browsers is on the roadmap. Until then, use the `delete_note` action so declining a confirmation prevents deletion.
 
+## Renaming the first heading with the note
+
+When `note.sync_heading` is `true` (default `false`), `:Obsidian rename` also renames the first heading of the note if it is equal to the old `id`. The links naming it (`[[Note#Heading]]`, `[[#Heading]]`) are rewritten in the same edit as the file rename, so they keep pointing at it. A first heading that differs from the `id` is left alone, and a new name that collides with another heading of the note leaves the heading as it was and logs an error.
+
+```lua
+require("obsidian").setup {
+  note = { sync_heading = true },
+}
+```
+
+Pair it with `frontmatter.sync_title` to keep the `title` property in step as well; see [[Frontmatter#Keeping title in step with id|Frontmatter]].
+
 ## Note ID Presets
 
 By default obsidian.nvim uses random zettel IDs. (**Legacy design decision, in 4.0.0 will be default to human readable input title**)
