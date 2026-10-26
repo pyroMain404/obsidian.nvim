@@ -534,7 +534,6 @@ M.build_first_heading_edit = function(bufnr, old_id, new_name, callback)
   M.build_heading_edit({
     kind = "heading",
     bufnr = bufnr,
-    header = first.text,
     anchor = first.anchor,
     placeholder = first.text,
     range = range(first.row, first.start_col, first.end_col),

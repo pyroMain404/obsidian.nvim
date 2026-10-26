@@ -345,12 +345,6 @@ M.merge_edits = function(edit, heading_edit)
     end
     if same then
       vim.list_extend(same.edits, change.edits)
-      table.sort(same.edits, function(a, b)
-        if a.range.start.line == b.range.start.line then
-          return a.range.start.character > b.range.start.character
-        end
-        return a.range.start.line > b.range.start.line
-      end)
     else
       -- Text edits come before the file rename, so they apply to the old paths.
       local at = #changes + 1
