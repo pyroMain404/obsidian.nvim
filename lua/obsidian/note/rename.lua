@@ -376,7 +376,12 @@ local function with_heading_edit(opts, note, old_path, new_name, edit, callback)
 
   local bufnr = vim.fn.bufnr(old_path, true)
   vim.fn.bufload(bufnr)
-  require("obsidian.lsp.handlers._rename").build_first_heading_edit(bufnr, note.id, new_name, function(heading_edit)
+  local header = require "obsidian.header"
+  local first = header.headings(bufnr)[1]
+  if not first or first.text ~= note.id then
+    return callback(edit)
+  end
+  header.rename(bufnr, first.anchor, new_name, { apply = false, sync_filename = false }, function(_, heading_edit)
     callback(M.merge_edits(edit, heading_edit))
   end)
 end
