@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [v3.16.10](https://github.com/obsidian-nvim/obsidian.nvim/releases/tag/v3.16.10) - 2026-10-28
+
 ### Added
 
 - LSP rename (`vim.lsp.buf.rename()`) renames block ids, headings (ATX and setext, with the links naming them), footnotes, tags (inline and in the frontmatter, with their subtags; renaming onto an existing tag merges them) and attachments (the file and every reference) under the cursor.
 - `frontmatter.sync_title` (default `false`): a `title` property equal to the note's `id` is changed along with the `id`, e.g. when the note is renamed.
 - `note.sync_heading` (default `false`): the first heading of a note equal to its `id` is renamed along with the note, and so are the links naming it, in the same edit as the file rename.
+- Inline Markdown note embeds with Tree-sitter highlighting, live refresh, full heading and block transclusion, paged whole-note previews, and `<C-a>` / `<C-x>` navigation.
 - `require("obsidian.link")` exposes `replace`, `insert`, and `unlink` for replacing ranges, inserting link text at a position, and removing link markup; link actions and suggestions use these operations.
 - `:Obsidian properties [KEY] [VALUE]`, a three-stage picker over frontmatter properties (keys, then values, then matching notes), mirroring `:Obsidian tags`.
 - `search.find_blocks_async()` for finding existing and unlabeled block-reference candidates.
@@ -31,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Keep reserved frontmatter fields synchronized between note attributes, metadata, and cached notes.
 - Note navigation when note is resolved, but failed to resolve section suffixes like `#heaing` and `#^block_id` will not prompt to create note.
+- Following a block link such as `[[note#^id]]` to a list item now lands on that item instead of the first item of the whole list. Block IDs in lists, quotes, and tables now resolve to the same boundaries as block completion.
+- `:Obsidian paste_img` reports a missing clipboard tool (such as `pngpaste`) instead of saying the clipboard has no image.
 
 ## [v3.16.9](https://github.com/obsidian-nvim/obsidian.nvim/releases/tag/v3.16.9) - 2026-10-13
 
@@ -41,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- YAML parsing now preserves sibling fields in arrays of frontmatter objects.
 - Sync setup now prompts for the end-to-end encryption password when linking an existing encrypted vault (#984).
 - Note saves preserve unsaved changes from an open buffer.
 - Deprecated `mappings` configuration is removed during normalization.
